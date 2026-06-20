@@ -139,6 +139,13 @@
   }
   .title-start-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(201,163,92,0.32);}
   .title-start-btn:active{transform:translateY(0);}
+  #continueGameBtn{
+    background:transparent;
+    color:var(--gold);
+    border:1px solid var(--gold);
+    box-shadow:none;
+    margin-bottom:14px;
+  }
 
   /* ===== ストーリー画面 ===== */
   .story-wrap{
@@ -358,6 +365,7 @@
       <h1 class="title-main heading" id="titleMainText">タロウくんの修行</h1>
       <div class="title-sub">いじめられっ子は、強くなれるか。</div>
       <div class="title-art" id="titleArt">🥋</div>
+      <button class="title-start-btn heading" id="continueGameBtn" style="display:none;">続きから</button>
       <button class="title-start-btn heading" id="newGameBtn">ニューゲーム</button>
     </div>
   </div>
@@ -834,6 +842,54 @@
   let pendingCarryOverStats = null; // 強くてニューゲーム用に画面をまたいで保持
 
   // ===================================================================
+  // セーブ／ロード（localStorageへの自動保存）
+  // ===================================================================
+  const SAVE_KEY = 'taro_kun_shugyo_save_v1';
+
+  function saveGame(){
+    try{
+      const payload = {
+        state: state,
+        pendingCarryOverStats: pendingCarryOverStats,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    }catch(e){
+      // ストレージが使えない環境（プライベートブラウズ等）では静かに諦める
+      console.warn('セーブに失敗しました', e);
+    }
+  }
+
+  function loadGame(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if(!raw) return null;
+      const payload = JSON.parse(raw);
+      if(!payload || !payload.state) return null;
+      return payload;
+    }catch(e){
+      console.warn('ロードに失敗しました', e);
+      return null;
+    }
+  }
+
+  function clearSave(){
+    try{
+      localStorage.removeItem(SAVE_KEY);
+    }catch(e){
+      // 無視
+    }
+  }
+
+  function hasSaveData(){
+    try{
+      return !!localStorage.getItem(SAVE_KEY);
+    }catch(e){
+      return false;
+    }
+  }
+
+  // ===================================================================
   // ヘルパー
   // ===================================================================
 
@@ -964,6 +1020,7 @@
     renderSubmenu();
     renderPickedList();
     renderStaminaPreview();
+    saveGame();
   }
 
   // ===================================================================
@@ -1523,6 +1580,7 @@
   function triggerFinalBattle(){
     state.gameOver = true;
     state.isFinalBattle = true;
+    saveGame();
     startBattle('master');
   }
 
@@ -1565,6 +1623,7 @@
       pendingCarryOverStats = null;
       newGameBtn.style.display = 'none';
     }
+    clearSave(); // 物語が完結したので、進行中セーブは消す（強くてニューゲームは別途pendingCarryOverStatsで引き継ぐ）
   }
 
   function showModal(title, body, resultText, cls, imageKey){
@@ -1589,6 +1648,7 @@
 
   document.getElementById('modalCloseBtn').addEventListener('click', function(){
     document.getElementById('modalOverlay').classList.remove('show');
+    clearSave();
     state = createInitialState(null);
     pendingCarryOverStats = null;
     showScreen('titleScreen');
@@ -1799,6 +1859,7 @@
     renderMonthProgress();
     document.getElementById('endWeekBtn').textContent = state.week >= TOTAL_WEEKS ? '師匠との手合わせへ' : 'この週を終える';
     document.getElementById('endWeekBtn').disabled = state.gameOver;
+    saveGame();
   }
 
   document.getElementById('endWeekBtn').addEventListener('click', endWeek);
@@ -1851,10 +1912,35 @@
   }
 
   document.getElementById('newGameBtn').addEventListener('click', function(){
+    clearSave();
+    state = createInitialState(null);
     storyIndex = 0;
     lastStoryImageKey = null;
     showScreen('storyScreen');
     showStoryPage();
+  });
+
+  document.getElementById('continueGameBtn').addEventListener('click', function(){
+    const payload = loadGame();
+    if(!payload){
+      // データが消えていた場合は通常のニューゲームへフォールバック
+      showScreen('storyScreen');
+      storyIndex = 0;
+      lastStoryImageKey = null;
+      showStoryPage();
+      return;
+    }
+    state = payload.state;
+    pendingCarryOverStats = payload.pendingCarryOverStats || null;
+    if(state.isFinalBattle && state.gameOver){
+      // 最終決戦の途中で離脱していた場合は、決戦を再度仕掛け直す
+      showScreen('screenMain');
+      renderAll();
+      startBattle('master');
+    } else {
+      showScreen('screenMain');
+      renderAll();
+    }
   });
 
   document.getElementById('storyScreen').addEventListener('click', function(){
@@ -1877,6 +1963,13 @@
     if(url){
       document.getElementById('titleArt').outerHTML = `<img class="title-hero-image" id="titleArt" src="${url}" alt="タロウくんの修行">`;
       document.getElementById('titleMainText').style.display = 'none';
+    }
+  })();
+
+  // 保存データがあれば「続きから」ボタンを表示
+  (function initContinueButton(){
+    if(hasSaveData()){
+      document.getElementById('continueGameBtn').style.display = 'inline-block';
     }
   })();
 
