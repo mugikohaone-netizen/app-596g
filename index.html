@@ -103,13 +103,20 @@
     color:var(--washi-dim);
   }
   .battle-portrait{
-    width:96px;
-    height:96px;
-    border-radius:50%;
-    object-fit:cover;
-    margin:0 auto 10px;
+    width:100%;
+    max-width:340px;
+    border-radius:10px;
+    margin:0 auto 14px;
     display:block;
     border:2px solid var(--vermilion);
+    box-shadow:0 8px 32px rgba(184,57,43,0.35);
+    transition:max-width 0.6s ease, margin 0.6s ease;
+  }
+  .battle-portrait.shrink{
+    max-width:120px;
+    border-radius:50%;
+    aspect-ratio:1/1;
+    object-fit:cover;
   }
   .ending-portrait{
     width:100%;
@@ -322,7 +329,7 @@
 
   .modal-overlay{position:fixed;inset:0;background:rgba(10,9,8,0.92);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
   .modal-overlay.show{display:flex;}
-  .modal-box{background:var(--ink-soft);border:1px solid var(--gold);border-radius:6px;max-width:460px;width:100%;padding:30px 24px;text-align:center;animation:modalIn 0.5s cubic-bezier(.22,.9,.34,1);}
+  .modal-box{background:var(--ink-soft);border:1px solid var(--gold);border-radius:6px;max-width:460px;width:100%;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:30px 24px;text-align:center;animation:modalIn 0.5s cubic-bezier(.22,.9,.34,1);}
   @keyframes modalIn{from{opacity:0;transform:scale(0.92) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
   .modal-box h2{font-family:'Shippori Mincho', serif;font-size:23px;margin:0 0 16px;}
   .modal-box p{font-size:14px;line-height:1.9;color:var(--washi-dim);margin:0 0 8px;white-space:pre-line;}
@@ -639,7 +646,7 @@
   // バランス型: 2ヶ月目~130 / 5ヶ月目~225 / 8ヶ月目~320 / 9ヶ月目~350
   // 心特化型 : 2ヶ月目~155 / 5ヶ月目~310 / 8ヶ月目~490 / 9ヶ月目~560
   const BOSSES = [
-    {id:'inu', name:'サル吉', desc:'近所の上級生。ノリは軽いが、力はある。校舎裏で待ち構える、最初の壁。', wall:135, turns:3,
+    {id:'inu', name:'サル吉', desc:'近所の上級生。ノリは軽いが、力はある。校舎裏で待ち構える、最初の壁。', wall:120, turns:3,
       weakStat:'shun', weakStat2:'da', weakLabel:'瞬発力・打',
       reward:{shin:10},
       rematchReward:{shin:4, shun:3, da:3},
@@ -655,8 +662,11 @@
         '「お前、いつの間にそんな強くなったんだよ。なんかズルくね？」',
       ],
       winMsg:'サル吉は尻尾を巻いて逃げていった。「お前、本当に変わったな」',
-      loseMsg:'突き飛ばされて終わった。悔しさだけが残る。'},
-    {id:'suneo', name:'サル夫', desc:'口の達者な嫌がらせ系。放課後の体育館で待ち構える。心が試される。', wall:235, turns:3,
+      loseMsg:'突き飛ばされて終わった。悔しさだけが残る。',
+      rematchPreLines:[
+        '「前はまぐれだからな！俺の方が強いんだから！」',
+      ]},
+    {id:'suneo', name:'サル夫', desc:'口の達者な嫌がらせ系。放課後の体育館で待ち構える。心が試される。', wall:240, turns:3,
       weakStat:'shin', weakStat2:'uke', weakLabel:'心・受',
       reward:{shin:15, da:5, uke:5, nage:5, kumi:5},
       rematchReward:{shin:6, uke:4, kumi:4},
@@ -672,8 +682,11 @@
         '「べ、別にすごいなんて思ってないから。たまたまだから」',
       ],
       winMsg:'サル夫は何も言えずに黙り込んだ。言葉より拳が強い時がある。',
-      loseMsg:'言葉で心をへし折られた。立ち直るのに時間がかかりそうだ。'},
-    {id:'jaian', name:'ゴリラ丸', desc:'純粋な暴力の化身。粗暴で自信家。学校の武道場で待ち受ける、圧倒的な壁。', wall:330, turns:6,
+      loseMsg:'言葉で心をへし折られた。立ち直るのに時間がかかりそうだ。',
+      rematchPreLines:[
+        '「ひぃ、試合って形なら戦いますけどー、顔は無しにしましょうね」',
+      ]},
+    {id:'jaian', name:'ゴリラ丸', desc:'純粋な暴力の化身。粗暴で自信家。学校の武道場で待ち受ける、圧倒的な壁。', wall:450, turns:6,
       weakStat:'kin', weakStat2:'kumi', weakLabel:'筋力・組',
       reward:{shin:25, shun:8, ji:8, kai:8, kin:8},
       rematchReward:{shin:8, kin:6, kumi:6},
@@ -690,7 +703,10 @@
         '「フッ……いい目をしてやがる。次は無い、覚えとけよ」',
       ],
       winMsg:'地面に倒れたのはゴリラ丸の方だった。タロウくん自身が一番驚いていた。',
-      loseMsg:'まったく歯が立たなかった。あの強さに追いつく日は来るのだろうか。'},
+      loseMsg:'まったく歯が立たなかった。あの強さに追いつく日は来るのだろうか。',
+      rematchPreLines:[
+        '「次は負けん」',
+      ]},
   ];
 
   const MASTER_BATTLE_TURNS = 9;
@@ -759,9 +775,7 @@
   ];
 
   const REMATCH_MODES = [
-    {id:'normal', name:'通常再戦', desc:'いつも通り、正面から戦う。報酬は控えめ。', rewardMul:1.0},
-    {id:'seal', name:'技封印（弱点技を封じる）', desc:'自分の得意技を1つ封じて挑む。リスクは上がるが報酬1.5倍。', rewardMul:1.5, sealWeak:true},
-    {id:'nomind', name:'無心の挑戦（心を使わない）', desc:'心のステータスを判定に使わず、純粋な力比べに挑む。報酬1.5倍。', rewardMul:1.5, noMind:true},
+    {id:'normal', name:'再戦', desc:'正面から、もう一度挑む。', rewardMul:1.0},
   ];
 
   // 攻防の台詞バリエーション（命中/失敗それぞれランダムに使う）
@@ -808,6 +822,7 @@
       lastWeekEvent: null,
       seenEventIds: [],
       carryOverStats: null,
+      justBattled: false,
       isNewGamePlus: !!carryOverStats,
       pendingNewGamePlusLine: carryOverStats
         ? '「お前の中に、まだ消えない何かが残っているようだな」\n「続きをやろう、タロウ。今度こそ、その先へ」'
@@ -827,15 +842,15 @@
   function totalAll(s){ return s.shin + taiTotal(s) + giTotal(s); }
 
   function phaseMultiplier(tai){
-    if(tai >= 150) return 2.0;
-    if(tai >= 100) return 1.5;
-    if(tai >= 50) return 1.2;
+    if(tai >= 200) return 1.5;
+    if(tai >= 120) return 1.3;
+    if(tai >= 60) return 1.15;
     return 1.0;
   }
   function shinMultiplier(shin){
-    if(shin >= 100) return 1.5;
-    if(shin >= 70) return 1.3;
-    if(shin >= 40) return 1.15;
+    if(shin >= 150) return 1.3;
+    if(shin >= 90) return 1.2;
+    if(shin >= 50) return 1.1;
     return 1.0;
   }
   function statLabel(key){
@@ -1149,7 +1164,7 @@
     }
   });
 
-  // 空手家パパの方針：心→体→技の順で全体を底上げさせたい
+  // 空手家パパの方針：心→体→技をバランス良く底上げさせたい
   // 活力が著しく低ければ休息を最優先で勧める
   function decideWeeklyTheme(){
     // ゴリラ丸を倒した後、師匠の指導は終わる。以降はお題指定なし（タロウ流）
@@ -1171,28 +1186,31 @@
     const taiTarget = 50 + monthIdx * 12;
     const giTarget = 40 + monthIdx * 10;
 
-    if(s.shin < shinTarget){
-      return Math.random() < 0.5 ? '基本' : '武道'; // 心は基本(立禅)か武道(型・組手)で鍛えられる
-    }
-    if(tai < taiTarget){
-      return '体';
-    }
-    if(gi < giTarget){
-      return '武道';
-    }
-    // バランスが取れていれば、最も伸び悩んでいる分野を指定
+    // 常に「目標に対して最も遅れている分野」をベースに、ランダムな揺らぎを少し加える
     const ratios = {
       '体': tai / Math.max(1, taiTarget),
       '武道': gi / Math.max(1, giTarget),
       '基本': s.shin / Math.max(1, shinTarget),
     };
+
+    // 同じお題が連続しすぎないよう、前回と同じテーマには軽いペナルティをかける
+    if(state.weekTheme && ratios[state.weekTheme] !== undefined){
+      ratios[state.weekTheme] += 0.15;
+    }
+
     const lowest = Object.keys(ratios).reduce((a,b) => ratios[a] < ratios[b] ? a : b);
     return lowest;
   }
 
   function advanceWeek(){
     state.week++;
-    state.stamina = Math.min(100, state.stamina + 30); // 週またぎで+30%回復
+    if(state.justBattled){
+      // ボスへの挑戦直後は消耗が激しく、翌週は満足に回復しきれない
+      state.stamina = Math.min(50, state.stamina + 30);
+      state.justBattled = false;
+    } else {
+      state.stamina = Math.min(100, state.stamina + 30); // 週またぎで+30%回復
+    }
     state.pickedMenus = [];
     state.selectedCategory = null;
     state.weekTheme = decideWeeklyTheme();
@@ -1285,29 +1303,15 @@
       `;
       card.addEventListener('click', () => {
         if(boss.defeated){
-          showRematchOptions(boss);
+          // 再戦モードは1種類のみなので、選択画面を挟まず直接挑む
+          state.pendingRematchMode = REMATCH_MODES[0];
+          startBattle(boss.id);
         } else {
           state.pendingRematchMode = null;
           startBattle(boss.id);
         }
       });
       list.appendChild(card);
-    });
-  }
-
-  function showRematchOptions(boss){
-    const wrap = document.getElementById('rematchOptions');
-    wrap.style.display = 'flex';
-    wrap.innerHTML = `<div class="section-title heading">${boss.name}への再戦方法</div>`;
-    REMATCH_MODES.forEach(mode => {
-      const card = document.createElement('div');
-      card.className = 'rematch-card' + (mode.id !== 'normal' ? ' risky' : '');
-      card.innerHTML = `<div class="rm-name heading">${mode.name}</div><div class="rm-desc">${mode.desc}</div>`;
-      card.addEventListener('click', () => {
-        state.pendingRematchMode = mode;
-        startBattle(boss.id);
-      });
-      wrap.appendChild(card);
     });
   }
 
@@ -1344,17 +1348,14 @@
       win = null; // 最終決戦は別ロジックでエンディング分岐
     } else {
       let weakVal = state.stats[boss.weakStat] + state.stats[boss.weakStat2];
-      if(mode && mode.sealWeak) weakVal = 0;
       if(state.weakBonusDisabled) weakVal = 0; // 無理がたたり、本来の力（弱点補正）が出せない
       let playerPower = totalAll(state.stats);
-      if(mode && mode.noMind) playerPower -= state.stats.shin;
       const condMul = conditionMultiplier(state.stamina);
       playerPower *= condMul;
 
       const reduction = weakVal * 0.6;
       const baseWall = isRematch ? boss.wall * 1.1 : boss.wall;
-      const riskAdj = mode && mode.id !== 'normal' ? 1.15 : 1.0;
-      const effectiveWall = Math.max(baseWall * 0.3, baseWall - reduction) * riskAdj;
+      const effectiveWall = Math.max(baseWall * 0.3, baseWall - reduction);
 
       const roll = playerPower * (0.85 + Math.random() * 0.3);
       win = roll >= effectiveWall;
@@ -1413,13 +1414,12 @@
     }
     if(isMaster){
       MASTER_PRE_LINES.forEach(t => lines.push({cls:'enemy-voice', text:t}));
+    } else if(isRematch && boss.rematchPreLines){
+      boss.rematchPreLines.forEach(t => lines.push({cls:'enemy-voice', text:t}));
     } else if(boss.preLines){
       boss.preLines.forEach(t => lines.push({cls:'enemy-voice', text:t}));
     } else {
       lines.push({cls:'enemy-voice', text: boss.enemyVoice});
-    }
-    if(mode && mode.id !== 'normal'){
-      lines.push({cls:'action', text:`――${mode.name}での挑戦――`});
     }
     lines.push({cls:'action', text:'――戦闘開始――'});
 
@@ -1489,6 +1489,10 @@
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
       i++;
+      if(i === 2){
+        const img = document.querySelector('.battle-portrait');
+        if(img) img.classList.add('shrink');
+      }
       setTimeout(showNextLine, line.cls === 'enemy-voice' ? 800 : 380);
     }
     showNextLine();
@@ -1507,6 +1511,7 @@
     }
     state.pendingRematchMode = null;
     state.weakBonusDisabled = false; // 一度の戦いでツケは清算される
+    state.justBattled = true; // 挑戦直後は次週の活力回復に制限がかかる
     state.currentMonthIndex++;
     advanceWeek();
   });
@@ -1528,9 +1533,9 @@
     const total = totalAll(s);
     const jaianDefeated = state.bosses.find(b => b.id === 'jaian').defeated;
 
-    // 閾値は「サル吉2ヶ月・サル夫5ヶ月・ゴリラ丸8ヶ月撃破」基準の成長カーブから再設計
-    // 完全勝利は1周目では到達不能な水準にしてあり、強くてニューゲームを重ねて初めて届く
-    const victoryCond = jaianDefeated && s.shin >= 250 && gi >= 220 && tai >= 250 && total >= 900;
+    // 閾値は実測の最適プレイ（月9で合計700〜800台に達しうる）を踏まえて再設計
+    // 完全勝利は1周目では到達不能、強くてニューゲームを2〜3周重ねて初めて届く水準
+    const victoryCond = jaianDefeated && s.shin >= 280 && gi >= 260 && tai >= 280 && total >= 950;
     const goodCond = (s.shin >= 45 && gi >= 70 && tai >= 90 && total >= 220);
 
     let title, body, resultCls;
@@ -1584,20 +1589,15 @@
 
   document.getElementById('modalCloseBtn').addEventListener('click', function(){
     document.getElementById('modalOverlay').classList.remove('show');
-    disableAllInputs();
+    state = createInitialState(null);
+    pendingCarryOverStats = null;
+    showScreen('titleScreen');
   });
 
   document.getElementById('newGamePlusBtn').addEventListener('click', function(){
     document.getElementById('modalOverlay').classList.remove('show');
     restartGameWithCarryOver();
   });
-
-  function disableAllInputs(){
-    document.querySelectorAll('.category-card, .submenu-item, .choice-card, .boss-pick-card, .rematch-card, .primary-btn').forEach(el => {
-      el.style.pointerEvents = 'none';
-      el.style.opacity = '0.4';
-    });
-  }
 
   function restartGameWithCarryOver(){
     const carryOver = pendingCarryOverStats;
